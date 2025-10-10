@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 142 71% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 142 71% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 71% 15%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 142 76% 46%;
+
+    --secondary: 47 96% 53%;
+    --secondary-foreground: 142 71% 15%;
+
+    --muted: 142 30% 96%;
+    --muted-foreground: 142 15% 45%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 142 30% 90%;
+    --input: 142 30% 90%;
+    --ring: 142 76% 36%;
+
+    --radius: 0.75rem;
+
+    /* Custom design tokens for agricultural theme */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%), hsl(162 73% 46%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(142 30% 98%));
+    --shadow-elegant: 0 10px 40px -10px hsl(142 76% 36% / 0.2);
+    --shadow-glow: 0 0 40px hsl(142 76% 46% / 0.15);
+  }
+
+  .dark {
+    --background: 142 30% 8%;
+    --foreground: 142 20% 95%;
+
+    --card: 142 30% 10%;
+    --card-foreground: 142 20% 95%;
+
+    --popover: 142 30% 10%;
+    --popover-foreground: 142 20% 95%;
+
+    --primary: 142 76% 46%;
+    --primary-foreground: 142 30% 8%;
+    --primary-glow: 142 76% 56%;
+
+    --secondary: 47 96% 53%;
+    --secondary-foreground: 142 30% 8%;
+
+    --muted: 142 30% 15%;
+    --muted-foreground: 142 20% 65%;
+
+    --accent: 142 76% 46%;
+    --accent-foreground: 142 30% 8%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 142 30% 20%;
+    --input: 142 30% 20%;
+    --ring: 142 76% 46%;
+
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 46%), hsl(142 76% 56%));
+    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%), hsl(162 73% 46%));
+    --gradient-card: linear-gradient(180deg, hsl(142 30% 10%), hsl(142 30% 12%));
+    --shadow-elegant: 0 10px 40px -10px hsl(142 76% 46% / 0.3);
+    --shadow-glow: 0 0 60px hsl(142 76% 56% / 0.25);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border border-border/50;
+  }
+
+  /* Hero gradient backgrounds */
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  /* Hover scale animation */
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  /* Feature card styling */
+  .feature-card {
+    @apply glass rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+}
