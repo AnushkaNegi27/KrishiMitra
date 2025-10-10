@@ -1,3 +1,5 @@
 plant_disease_model.h5
 plant_disease_model.keras
 crop_recommendation_model.joblib
+.env
+__pycache__
