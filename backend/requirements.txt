@@ -1,0 +1,8 @@
+flask
+flask-cors
+tensorflow
+scikit-learn==1.2.2 
+Pillow
+numpy
+python-dotenv
+google-generativeai
