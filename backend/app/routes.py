@@ -1,3 +1,4 @@
+from .services import get_weather  
 from flask import Blueprint, request, jsonify
 from . import services
 
@@ -5,10 +6,37 @@ from . import services
 api = Blueprint('api', __name__)
 
 
+# @api.route('/ai/crop-recommendation', methods=['POST'])
+# def crop_recommendation_endpoint():
+#     try:
+#         data = request.get_json(force=True)
+#         predicted_crop = services.get_crop_recommendation(data)
+        
+#         prompt = f"""
+#         Based on agricultural data where a model recommended '{predicted_crop}', 
+#         provide a concise, helpful recommendation for a farmer in India. 
+#         Include why '{predicted_crop}' is suitable and 1-2 important cultivation tips. 
+#         Keep it to 3-4 sentences. Data: {data}
+#         """
+        
+#         description = services.generate_ai_description(prompt)
+        
+#         return jsonify({
+#             "recommended_crop": predicted_crop,
+#             "description": description
+#         })
+#     except Exception as e:
+#         print(f"Error in crop recommendation endpoint: {e}")
+#         return jsonify({"error": "An internal error occurred."}), 500
+
 @api.route('/ai/crop-recommendation', methods=['POST'])
 def crop_recommendation_endpoint():
     try:
         data = request.get_json(force=True)
+        
+        if "city" not in data:
+            return jsonify({"error": "City name is required for weather data."}), 400
+        
         predicted_crop = services.get_crop_recommendation(data)
         
         prompt = f"""
@@ -27,6 +55,7 @@ def crop_recommendation_endpoint():
     except Exception as e:
         print(f"Error in crop recommendation endpoint: {e}")
         return jsonify({"error": "An internal error occurred."}), 500
+
 
 
 @api.route('/ai/disease-detection', methods=['POST'])

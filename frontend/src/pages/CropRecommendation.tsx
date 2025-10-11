@@ -24,10 +24,10 @@ export default function CropRecommendation() {
     nitrogen: "",
     phosphorus: "",
     potassium: "",
-    temperature: "",
-    humidity: "",
+    // temperature: "",
+    // humidity: "",
     ph: "",
-    rainfall: ""
+    city: ""
   });
 
   // Handle input changes
@@ -50,10 +50,11 @@ export default function CropRecommendation() {
         n: parseFloat(formData.nitrogen),
         p: parseFloat(formData.phosphorus),
         k: parseFloat(formData.potassium),
-        temp: parseFloat(formData.temperature),
-        humidity: parseFloat(formData.humidity),
+        // temp: parseFloat(formData.temperature),
+        // humidity: parseFloat(formData.humidity),
         phvalue: parseFloat(formData.ph),
-        rainfall: parseFloat(formData.rainfall)
+        // rainfall: parseFloat(formData.rainfall)
+        city: formData.city.trim()
       };
 
       const response = await fetch(`${API_BASE_URL}/ai/crop-recommendation`, {
@@ -91,10 +92,10 @@ export default function CropRecommendation() {
     { name: "nitrogen", label: "Nitrogen (N)", placeholder: "e.g., 90", unit: "kg/ha" },
     { name: "phosphorus", label: "Phosphorus (P)", placeholder: "e.g., 42", unit: "kg/ha" },
     { name: "potassium", label: "Potassium (K)", placeholder: "e.g., 43", unit: "kg/ha" },
-    { name: "temperature", label: "Temperature", placeholder: "e.g., 25.5", unit: "°C" },
-    { name: "humidity", label: "Humidity", placeholder: "e.g., 80", unit: "%" },
+    // { name: "temperature", label: "Temperature", placeholder: "e.g., 25.5", unit: "°C" },
+    // { name: "humidity", label: "Humidity", placeholder: "e.g., 80", unit: "%" },
     { name: "ph", label: "pH Value", placeholder: "e.g., 6.5", unit: "pH" },
-    { name: "rainfall", label: "Rainfall", placeholder: "e.g., 200", unit: "mm" }
+    { name: "city", label: "City", placeholder: "e.g., Delhi", unit: "" }
   ];
 
   return (
@@ -137,8 +138,10 @@ export default function CropRecommendation() {
                     <Input
                       id={field.name}
                       name={field.name}
-                      type="number"
-                      step="0.01"
+                      // type="number"
+                      // step="0.01"
+                      type={field.name === "city" ? "text" : "number"}
+                      step={field.name === "city" ? undefined : "0.01"}
                       placeholder={field.placeholder}
                       value={formData[field.name as keyof typeof formData]}
                       onChange={handleChange}
