@@ -62,10 +62,13 @@ In the `backend/` directory, create a new file named `.env` and add the followin
 
 GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
 SECRET_KEY="YOUR_RANDOMLY_GENERATED_SECRET_KEY_HERE"
+OPENWEATHER_API_KEY="YOUR_OPENWEATHER_API_KEY_HERE"
+
 ```
 
 - You can get a `GOOGLE_API_KEY` from [Google AI Studio](https://makersuite.google.com/app/apikey).
 - Generate a `SECRET_KEY` by running this in your terminal: `python -c 'import secrets; print(secrets.token_hex(24))'`
+- You can get an OPENWEATHER_API_KEY from [OpenWeatherMap](https://openweathermap.org/appid)
 
 4. Run the Development Server
 Make sure you are in the backend/ directory.
