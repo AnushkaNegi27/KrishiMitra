@@ -3,7 +3,7 @@ Krishi Mitra is an intelligent farming assistant designed to empower farmers by 
 
 ##  Key Features
 
-- **Intelligent Crop Recommendation**: Recommends the most suitable crop to grow based on soil conditions and environmental factors (N, P, K, temperature, humidity, pH, and rainfall).
+- **Intelligent Crop Recommendation**: Recommends the most suitable crop to grow based on soil nutrient levels (N, P, K), pH, and the farmer’s city (for local weather data).
     
 - **AI-Powered Disease Detection**: Identifies plant diseases by analyzing images of plant leaves.
     
@@ -98,10 +98,8 @@ Predicts the best crop to grow and provides a descriptive recommendation.
         "n": 90,
         "p": 42,
         "k": 43,
-        "temp": 20.8,
-        "humidity": 82.1,
         "phvalue": 6.5,
-        "rainfall": 202.9
+        "city": "Delhi"
     }
     ```
     
