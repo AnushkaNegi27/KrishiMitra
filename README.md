@@ -138,3 +138,58 @@ Analyzes a plant leaf image, identifies the disease, and provides a description 
         "description": "Apple Scab is a common fungal disease... (AI-generated text)",
         "confidence": "98.75%"
     }
+
+***
+
+To set up the frontend for KrishiMitra, follow these additional steps after completing the backend configuration.
+
+***
+
+## Frontend Setup and Configuration
+
+1. **Navigate to the Frontend Directory**
+
+   Change to the `frontend` directory in your project.
+
+   ```bash
+   cd ./frontend
+   ```
+
+2. **Install Dependencies**
+
+   Install the required Node.js packages.
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables**
+
+   Create a `.env` file in the `frontend/` directory, using the provided `.env.example` as a template. You can copy the example and edit as needed:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Update the `.env` file with the following content:
+
+   ```
+   VITE_API_BASE_URL=http://127.0.0.1:5000/api
+   VITE_CLERK_PUBLISHABLE_KEY=<your_clerk_publishable_key>
+   ```
+
+   - Replace `<your_clerk_publishable_key>` with your actual Clerk publishable key.
+
+4. **Start the Frontend Development Server**
+
+   Finally, run the frontend development server:
+
+   ```bash
+   npm run dev
+   ```
+
+Your frontend application will now be running at `http://localhost:5173`( and can interact with the backend at `http://127.0.0.1:5000/api`.
+
+Now your KrishiMitra assistant is ready with both backend and frontend running locally.
+
+
