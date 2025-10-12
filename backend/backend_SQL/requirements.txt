@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pydantic
+requests
+torch
+torchvision
+torchaudio
+stable-baselines3
+numpy
+pandas
+matplotlib
