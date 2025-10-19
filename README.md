@@ -12,6 +12,7 @@ Krishi Mitra is an intelligent farming assistant designed to empower farmers by 
 
 - **Machine Learning**: Scikit-learn, TensorFlow (Keras)
 - **Backend**: Flask
+- **Database**: PostgreSQL (for farmer profiles, crop data, and activity logs)
 - **Generative AI**: Google Gemini
 - **Frontend**: React.js (planned)
 
@@ -22,6 +23,7 @@ Follow these steps to set up and run the AI backend server locally.
 **Prerequisites:**
 - Git and Git LFS
 - Conda / Miniconda
+- PostgreSQL installed and running
 
 1. Clone the Repository
 First, ensure Git LFS is installed on your system (sudo apt-get install git-lfs or brew install git-lfs). Then, clone the repository.
@@ -64,12 +66,22 @@ GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
 SECRET_KEY="YOUR_RANDOMLY_GENERATED_SECRET_KEY_HERE"
 OPENWEATHER_API_KEY="YOUR_OPENWEATHER_API_KEY_HERE"
 
+# PostgreSQL Database Config
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=<your_postgres_user>
+DB_PASSWORD=<your_postgres_password>
+DB_NAME=krishimitra
+
 ```
 
 - You can get a `GOOGLE_API_KEY` from [Google AI Studio](https://makersuite.google.com/app/apikey).
 - Generate a `SECRET_KEY` by running this in your terminal: `python -c 'import secrets; print(secrets.token_hex(24))'`
 - You can get an OPENWEATHER_API_KEY from [OpenWeatherMap](https://openweathermap.org/appid)
-
+- Do not commit the .env file to GitHub.
+- Ensure PostgreSQL is running locally or remotely.
+- Replace placeholders (<your_postgres_user> etc.) with your actual credentials.
+  
 4. Run the Development Server
 Make sure you are in the backend/ directory.
 
