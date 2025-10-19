@@ -32,7 +32,10 @@ def create_app(config_class=Config):
             app.gemini_model = None
 
     # register blueprints
-    from .routes import api as api_blueprint
+    from .routes import api as api_blueprint, test_bp as test_blueprint
+    from .auth import auth as auth_blueprint
     app.register_blueprint(api_blueprint, url_prefix='/api')
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')  # auth blueprint
+    app.register_blueprint(test_blueprint, url_prefix='/test')  # test DB blueprint
 
     return app
