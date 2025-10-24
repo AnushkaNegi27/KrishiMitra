@@ -69,6 +69,13 @@ SECRET_KEY="your_generated_secret_key_here"
 GOOGLE_API_KEY="your_google_ai_api_key_here"
 OPENWEATHER_API_KEY="your_openweather_api_key_here"
 
+# PostgreSQL Database Config
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_postgres_username
+DB_PASSWORD=your_postgres_password
+DB_NAME=krishimitra
+
 # Email Configuration (for password reset)
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
