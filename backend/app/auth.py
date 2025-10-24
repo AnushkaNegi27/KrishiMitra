@@ -4,6 +4,8 @@ import hashlib
 import jwt
 import datetime
 from functools import wraps
+from flask_mail import Message
+from . import mail  # import the Mail object from __init__.py
 
 auth = Blueprint('auth', __name__)
 
@@ -116,3 +118,89 @@ def signin():
         "token": token,
         "farmer": {"id": result['farmer_id'], "name": result['name'], "city": result['city']}
     })
+
+
+# -------------------
+# Forgot Password
+# -------------------
+@auth.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({"message": "Email is required"}), 400
+
+    # Check if the email exists in database
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Farmers WHERE email = %s", (email,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({"message": "No account found with this email"}), 404
+
+    # Generate JWT token for password reset (expires in 30 mins)
+    token = jwt.encode(
+        {'email': email, 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
+        current_app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
+
+    # Create reset link (frontend URL)
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+
+    # Send email
+    msg = Message(
+        subject='KrishiMitra Password Reset',
+        sender=current_app.config['MAIL_USERNAME'],
+        recipients=[email]
+    )
+    msg.body = f"Hello,\n\nClick the link below to reset your KrishiMitra password (expires in 30 minutes):\n{reset_link}"
+    mail.send(msg)
+
+    return jsonify({"message": "Password reset link sent to your email"}), 200
+
+
+
+# -------------------
+# Reset Password
+# -------------------
+@auth.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    token = data.get('token')
+    new_password = data.get('new_password')
+
+    if not all([token, new_password]):
+        return jsonify({"message": "Token and new password are required"}), 400
+
+    # Decode token
+    try:
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        email = payload['email']
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 400
+    except jwt.InvalidTokenError:
+        return jsonify({"message": "Invalid token"}), 400
+
+    # Hash new password
+    password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+
+    # Update password in database
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE Farmers SET password_hash = %s WHERE email = %s",
+            (password_hash, email)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Database error"}), 500
+    finally:
+        conn.close()
+
+    return jsonify({"message": "Password has been reset successfully"}), 200

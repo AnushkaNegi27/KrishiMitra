@@ -1,3 +1,7 @@
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +14,7 @@ import CropRecommendation from "./pages/CropRecommendation";
 import DiseaseDetection from "./pages/DiseaseDetection";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +29,37 @@ const App = () => (
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/crop-recommendation" element={<CropRecommendation />} />
-              <Route path="/disease-detection" element={<DiseaseDetection />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/crop-recommendation"
+                element={
+                  <ProtectedRoute>
+                    <CropRecommendation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/disease-detection"
+                element={
+                  <ProtectedRoute>
+                    <DiseaseDetection />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
 
@@ -26,13 +27,14 @@ export default function SignIn() {
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userName", data.farmer.name); // store user name for navbar
-        navigate("/"); // redirect to home/dashboard
+        localStorage.setItem("userName", data.farmer.name);
+        toast.success("Signin successful!");
+        navigate("/dashboard"); // redirect to dashboard
       } else {
-        alert(data.error || "Signin failed");
+        toast.error(data.error || "Signin failed");
       }
     } catch (err) {
-      alert("Error connecting to server");
+      toast.error("Error connecting to server");
     } finally {
       setLoading(false);
     }
@@ -66,6 +68,16 @@ export default function SignIn() {
             {loading ? "Signing In..." : "Sign In"}
           </Button>
         </form>
+
+        {/* Forgot Password */}
+        <div className="mt-4 text-right">
+          <button
+            onClick={() => navigate("/forgot-password")}
+            className="text-blue-500 hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
       </div>
     </div>
   );

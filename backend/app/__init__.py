@@ -4,15 +4,33 @@ import joblib
 import tensorflow as tf
 import google.generativeai as genai
 from config import Config
+from flask_mail import Mail  # <-- Added for Forgot Password feature
+
+# Initialize Mail globally so it can be imported in auth.py
+mail = Mail()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # initialize extension
+    # -------------------------------
+    # Initialize Flask extensions
+    # -------------------------------
     CORS(app)
 
-    # Load models and configure AI within the application context
+    # Flask-Mail configuration
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 465
+    app.config['MAIL_USERNAME'] = 'anushka27.negi@gmail.com'      # Your Gmail address
+    app.config['MAIL_PASSWORD'] = 'bugivzjlkbcavbcu'       # 16-char Gmail App Password
+
+    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_USE_SSL'] = True
+    mail.init_app(app)
+
+    # -------------------------------
+    # Load models and configure AI
+    # -------------------------------
     with app.app_context():
         try:
             app.disease_model = tf.keras.models.load_model(app.config['DISEASE_MODEL_PATH'])
@@ -31,9 +49,12 @@ def create_app(config_class=Config):
             print(f"Error configuring Gemini AI: {e}")
             app.gemini_model = None
 
-    # register blueprints
+    # -------------------------------
+    # Register Blueprints
+    # -------------------------------
     from .routes import api as api_blueprint, test_bp as test_blueprint
     from .auth import auth as auth_blueprint
+
     app.register_blueprint(api_blueprint, url_prefix='/api')
     app.register_blueprint(auth_blueprint, url_prefix='/auth')  # auth blueprint
     app.register_blueprint(test_blueprint, url_prefix='/test')  # test DB blueprint
