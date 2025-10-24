@@ -8,23 +8,37 @@ load_dotenv(dotenv_path)
 class Config:
     """Configuration settings for the Flask application."""
 
+    # -------------------------------
     # General Config
+    # -------------------------------
     SECRET_KEY = os.getenv('SECRET_KEY', 'secret_key')
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
+    # -------------------------------
     # Database (PostgreSQL)
+    # -------------------------------
     DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_USER = os.getenv("DB_USER", "krishi_user")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "Anushka@27")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
     DB_NAME = os.getenv("DB_NAME", "krishimitra")
 
+    # -------------------------------
+    # Flask-Mail (for Forgot Password)
+    # -------------------------------
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+
+    # -------------------------------
     # Paths for AI models
+    # -------------------------------
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     DISEASE_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'plant_disease_model.keras')
     CROP_MODEL_PATH = os.path.join(BASE_DIR, 'models', 'crop_recommendation_model.joblib')
 
+    # -------------------------------
     # Disease Class Names
+    # -------------------------------
     DISEASE_CLASS_NAMES = [
         'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
         'Blueberry___healthy',
