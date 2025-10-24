@@ -62,26 +62,37 @@ In the `backend/` directory, create a new file named `.env` and add the followin
 ```
 # In backend/.env
 
-GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
-SECRET_KEY="YOUR_RANDOMLY_GENERATED_SECRET_KEY_HERE"
-OPENWEATHER_API_KEY="YOUR_OPENWEATHER_API_KEY_HERE"
+# General Config
+SECRET_KEY="your_generated_secret_key_here"
 
-# PostgreSQL Database Config
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=<your_postgres_user>
-DB_PASSWORD=<your_postgres_password>
-DB_NAME=krishimitra
+# API Keys
+GOOGLE_API_KEY="your_google_ai_api_key_here"
+OPENWEATHER_API_KEY="your_openweather_api_key_here"
+
+# Email Configuration (for password reset)
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
 
 ```
 
 - You can get a `GOOGLE_API_KEY` from [Google AI Studio](https://makersuite.google.com/app/apikey).
-- Generate a `SECRET_KEY` by running this in your terminal: `python -c 'import secrets; print(secrets.token_hex(24))'`
-- You can get an OPENWEATHER_API_KEY from [OpenWeatherMap](https://openweathermap.org/appid)
-- Do not commit the .env file to GitHub.
+- Generate a `SECRET_KEY` by running this in your terminal:  
+  `python -c "import secrets; print(secrets.token_hex(24))"`
+- You can get an `OPENWEATHER_API_KEY` from [OpenWeatherMap](https://openweathermap.org/appid).
+- For sending password reset emails:
+  - Use your Gmail ID in `MAIL_USERNAME`.
+  - Generate a **16-character App Password** from your Google Account  
+    → Go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)  
+    → Select “Mail” and “Windows Computer,” then copy the generated password.
+  - Paste that App Password in your `.env` file as `MAIL_PASSWORD`.
+- Do **not** use your real Gmail password — use only the App Password.
+- Do not commit the `.env` file to GitHub.
 - Ensure PostgreSQL is running locally or remotely.
-- Replace placeholders (<your_postgres_user> etc.) with your actual credentials.
-  
+- Replace placeholders like `<your_postgres_user>` with your actual database credentials.
+
 4. Run the Development Server
 Make sure you are in the backend/ directory.
 
