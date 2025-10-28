@@ -53,21 +53,6 @@ export default function CropRecommendation() {
         return;
       }
 
-      // // Decode farmer_id from JWT
-      // const base64Payload = token.split('.')[1];
-      // const payload = JSON.parse(atob(base64Payload));
-      // const farmer_id = payload.farmer_id; // adjust if different
-
-      // if (!farmer_id) {
-      //   toast({s
-      //     title: "Error",
-      //     description: "Cannot get farmer ID from token.",
-      //     variant: "destructive",
-      //   });
-      //   setLoading(false);
-      //   return;
-      // }
-
       // Prepare payload
       const requestBody = {
         // farmer_id,

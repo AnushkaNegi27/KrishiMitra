@@ -15,11 +15,6 @@ def crop_recommendation_endpoint():
         # data = request.get_json(force=True)
         farmer_id = g.farmer_id
 
-        # For testing: get farmer_id from JSON
-        # farmer_id = data.get("farmer_id")
-        # if not farmer_id:
-        #     return jsonify({"error": "farmer_id is required"}), 400
-
         # Fetch city from DB
         conn = get_connection()
         if not conn:
