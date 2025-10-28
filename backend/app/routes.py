@@ -1,33 +1,39 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from db import get_connection
 from . import services
-from .auth import token_required
+from .auth import token_required 
 
 api = Blueprint('api', __name__)
 
+# ------------------------------
+# Crop Recommendation Endpoint
+# ------------------------------
 @api.route('/ai/crop-recommendation', methods=['POST'])
 @token_required
 def crop_recommendation_endpoint():
     try:
-        farmer_id = request.farmer_id  # fetched from JWT token
+        # data = request.get_json(force=True)
+        farmer_id = g.farmer_id
 
-        # Get farmer's city from DB
+        # For testing: get farmer_id from JSON
+        # farmer_id = data.get("farmer_id")
+        # if not farmer_id:
+        #     return jsonify({"error": "farmer_id is required"}), 400
+
+        # Fetch city from DB
         conn = get_connection()
         if not conn:
             return jsonify({"error": "Database connection failed"}), 500
 
         with conn.cursor() as cursor:
-            cursor.execute("SELECT city FROM Farmers WHERE farmer_id=%s", (farmer_id,))
+            cursor.execute("SELECT city FROM farmers WHERE farmer_id=%s", (farmer_id,))
             result = cursor.fetchone()
-
         conn.close()
 
         if not result:
             return jsonify({"error": "Farmer not found"}), 404
 
-        city = result['city']  # RealDictCursor returns dict
-
-        # Prepare data for crop recommendation
+        city = result['city']
         data = request.get_json(force=True)
         data['city'] = city  # automatically set city
 
@@ -50,7 +56,9 @@ def crop_recommendation_endpoint():
         print(f"Error in crop recommendation endpoint: {e}")
         return jsonify({"error": "An internal error occurred."}), 500
 
-
+# ------------------------------
+# Disease Detection Endpoint
+# ------------------------------
 @api.route('/ai/disease-detection', methods=['POST'])
 def disease_detection_endpoint():
     if 'file' not in request.files:
@@ -83,8 +91,9 @@ def disease_detection_endpoint():
         print(f"Error in disease detection endpoint: {e}")
         return jsonify({"error": "An internal error occurred."}), 500
 
-
-# Optional: Test route to verify DB connection
+# ------------------------------
+# Test DB Route
+# ------------------------------
 test_bp = Blueprint('test', __name__)
 
 @test_bp.route('/test-db', methods=['GET'])

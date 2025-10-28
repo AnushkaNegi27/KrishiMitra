@@ -50,11 +50,11 @@ def get_crop_recommendation(data):
     """Use the loaded crop model to make a prediction, automatically fetch weather from city."""
     model = current_app.crop_model
 
-    # Extract soil data
-    N = data.get("n")
-    P = data.get("p")
-    K = data.get("k")
-    ph = data.get("phvalue")
+    # Extract soil data (corrected key names)
+    N = data.get("N")
+    P = data.get("P")
+    K = data.get("K")
+    ph = data.get("ph")
     city = data.get("city")
 
     # Fetch weather automatically

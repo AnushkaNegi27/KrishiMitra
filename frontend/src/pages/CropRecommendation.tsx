@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { GiPlantSeed } from "react-icons/gi";
-import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
-
+import { Loader2, Sparkles, CheckCircle2, Mic, MicOff } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api";
 
@@ -15,7 +14,6 @@ interface RecommendationResult {
   description: string;
 }
 
-// Crop recommendation page with soil nutrient input form
 export default function CropRecommendation() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -24,13 +22,11 @@ export default function CropRecommendation() {
     nitrogen: "",
     phosphorus: "",
     potassium: "",
-    // temperature: "",
-    // humidity: "",
-    ph: "",
-    city: ""
+    ph: ""
   });
+  const [listening, setListening] = useState(false);
 
-  // Handle input changes
+  // Handle manual input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -38,49 +34,82 @@ export default function CropRecommendation() {
     });
   };
 
-  // Handle form submission - Call Flask backend API
+  // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setResult(null);
 
     try {
-      // Prepare data in the format expected by the backend
-      const payload = {
-        n: parseFloat(formData.nitrogen),
-        p: parseFloat(formData.phosphorus),
-        k: parseFloat(formData.potassium),
-        // temp: parseFloat(formData.temperature),
-        // humidity: parseFloat(formData.humidity),
-        phvalue: parseFloat(formData.ph),
-        // rainfall: parseFloat(formData.rainfall)
-        city: formData.city.trim()
+      // Get JWT token
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast({
+          title: "Not Logged In",
+          description: "Please login to get crop recommendations.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // // Decode farmer_id from JWT
+      // const base64Payload = token.split('.')[1];
+      // const payload = JSON.parse(atob(base64Payload));
+      // const farmer_id = payload.farmer_id; // adjust if different
+
+      // if (!farmer_id) {
+      //   toast({s
+      //     title: "Error",
+      //     description: "Cannot get farmer ID from token.",
+      //     variant: "destructive",
+      //   });
+      //   setLoading(false);
+      //   return;
+      // }
+
+      // Prepare payload
+      const requestBody = {
+        // farmer_id,
+        N: parseFloat(formData.nitrogen),
+        P: parseFloat(formData.phosphorus),
+        K: parseFloat(formData.potassium),
+        phvalue: parseFloat(formData.ph)
       };
 
       const response = await fetch(`${API_BASE_URL}/ai/crop-recommendation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errText = await response.text();
+        throw new Error(errText || `API error: ${response.status}`);
       }
 
       const data: RecommendationResult = await response.json();
       setResult(data);
-      
+
+      // Speak the recommendation
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(
+        `Recommended crop is ${data.recommended_crop}. ${data.description}`
+      );
+      synth.speak(utterance);
+
       toast({
         title: "Prediction Complete! 🌱",
         description: `Recommended crop: ${data.recommended_crop}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error calling crop recommendation API:", error);
       toast({
         title: "Error",
-        description: "Failed to get recommendation. Make sure your Flask backend is running at " + API_BASE_URL,
+        description: "Failed to get recommendation. Make sure your backend is running and JWT is valid.",
         variant: "destructive",
       });
     } finally {
@@ -88,14 +117,55 @@ export default function CropRecommendation() {
     }
   };
 
+  // Handle voice input
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        title: "Not Supported",
+        description: "Speech recognition is not supported in this browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript.toLowerCase();
+      toast({
+        title: "Voice Captured 🎤",
+        description: transcript,
+      });
+
+      // Extract numbers from transcript
+      const nitrogenMatch = transcript.match(/nitrogen\s*(\d+(\.\d+)?)/);
+      const phosphorusMatch = transcript.match(/phosphorus\s*(\d+(\.\d+)?)/);
+      const potassiumMatch = transcript.match(/potassium\s*(\d+(\.\d+)?)/);
+      const phMatch = transcript.match(/p\s*h\s*(\d+(\.\d+)?)/);
+
+      setFormData({
+        nitrogen: nitrogenMatch ? nitrogenMatch[1] : formData.nitrogen,
+        phosphorus: phosphorusMatch ? phosphorusMatch[1] : formData.phosphorus,
+        potassium: potassiumMatch ? potassiumMatch[1] : formData.potassium,
+        ph: phMatch ? phMatch[1] : formData.ph,
+      });
+    };
+
+    recognition.start();
+  };
+
   const inputFields = [
     { name: "nitrogen", label: "Nitrogen (N)", placeholder: "e.g., 90", unit: "kg/ha" },
     { name: "phosphorus", label: "Phosphorus (P)", placeholder: "e.g., 42", unit: "kg/ha" },
     { name: "potassium", label: "Potassium (K)", placeholder: "e.g., 43", unit: "kg/ha" },
-    // { name: "temperature", label: "Temperature", placeholder: "e.g., 25.5", unit: "°C" },
-    // { name: "humidity", label: "Humidity", placeholder: "e.g., 80", unit: "%" },
-    { name: "ph", label: "pH Value", placeholder: "e.g., 6.5", unit: "pH" },
-    { name: "city", label: "City", placeholder: "e.g., Delhi", unit: "" }
+    { name: "ph", label: "pH Value", placeholder: "e.g., 6.5", unit: "pH" }
   ];
 
   return (
@@ -107,11 +177,9 @@ export default function CropRecommendation() {
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">AI-Powered Recommendation</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Crop Recommendation System
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Crop Recommendation System</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Enter your soil nutrient values and environmental conditions to get personalized crop recommendations
+            Enter your soil nutrient values to get personalized crop recommendations
           </p>
         </div>
 
@@ -122,7 +190,7 @@ export default function CropRecommendation() {
               <GiPlantSeed className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Soil & Environmental Data</h2>
+              <h2 className="text-2xl font-bold">Soil Data</h2>
               <p className="text-sm text-muted-foreground">Fill in the details below</p>
             </div>
           </div>
@@ -131,37 +199,27 @@ export default function CropRecommendation() {
             <div className="grid md:grid-cols-2 gap-6">
               {inputFields.map((field) => (
                 <div key={field.name} className="space-y-2">
-                  <Label htmlFor={field.name} className="text-base font-medium">
-                    {field.label}
-                  </Label>
+                  <Label htmlFor={field.name} className="text-base font-medium">{field.label}</Label>
                   <div className="relative">
                     <Input
                       id={field.name}
                       name={field.name}
-                      // type="number"
-                      // step="0.01"
-                      type={field.name === "city" ? "text" : "number"}
-                      step={field.name === "city" ? undefined : "0.01"}
+                      type="number"
+                      step="0.01"
                       placeholder={field.placeholder}
                       value={formData[field.name as keyof typeof formData]}
                       onChange={handleChange}
                       required
                       className="pr-16"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      {field.unit}
-                    </span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{field.unit}</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-4">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full gradient-primary h-12 text-lg"
-              >
+            <div className="pt-4 flex flex-col gap-3">
+              <Button type="submit" disabled={loading} className="w-full gradient-primary h-12 text-lg">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -174,14 +232,31 @@ export default function CropRecommendation() {
                   </>
                 )}
               </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={startListening}
+                className="flex items-center justify-center gap-2"
+              >
+                {listening ? (
+                  <>
+                    <MicOff className="h-5 w-5 text-red-500" />
+                    Listening...
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-5 w-5 text-green-500" />
+                    Speak Input
+                  </>
+                )}
+              </Button>
             </div>
           </form>
 
-          {/* Info Note */}
           <div className="mt-6 p-4 bg-muted/50 rounded-xl border border-border">
             <p className="text-sm text-muted-foreground">
               <strong>Backend API:</strong> {API_BASE_URL}/ai/crop-recommendation
-              {!API_BASE_URL.includes("127.0.0.1") && " (Set VITE_API_BASE_URL in .env to change)"}
             </p>
           </div>
         </Card>
@@ -202,16 +277,12 @@ export default function CropRecommendation() {
             <div className="space-y-4">
               <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-xl border border-green-500/20">
                 <p className="text-sm font-medium text-muted-foreground mb-2">Recommended Crop</p>
-                <h3 className="text-3xl font-bold text-green-600 dark:text-green-400 capitalize">
-                  {result.recommended_crop}
-                </h3>
+                <h3 className="text-3xl font-bold text-green-600 dark:text-green-400 capitalize">{result.recommended_crop}</h3>
               </div>
 
               <div className="p-6 bg-muted/50 rounded-xl border border-border">
                 <p className="text-sm font-medium text-muted-foreground mb-3">AI Analysis</p>
-                <p className="text-base leading-relaxed whitespace-pre-wrap">
-                  {result.description}
-                </p>
+                <p className="text-base leading-relaxed whitespace-pre-wrap">{result.description}</p>
               </div>
             </div>
           </Card>
@@ -220,3 +291,4 @@ export default function CropRecommendation() {
     </div>
   );
 }
+
