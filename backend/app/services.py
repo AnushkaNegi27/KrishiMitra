@@ -26,11 +26,17 @@ def get_weather(city_name):
 
 def preprocess_image(file_storage):
     """Read and preprocess an image file for the disease model."""
-    img = Image.open(io.BytesIO(file_storage.read())).convert('RGB')
-    img = img.resize((128, 128))
-    img_array = tf.keras.preprocessing.image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0) / 255.0
-    return img_array
+    try:
+        file_storage.stream.seek(0)  # reset pointer before reading
+        image = Image.open(io.BytesIO(file_storage.read())).convert('RGB')
+        image = image.resize((128, 128))
+        img_array = tf.keras.preprocessing.image.img_to_array(image)
+        img_array = np.expand_dims(img_array, axis=0) / 255.0
+        return img_array
+    except Exception as e:
+        print(f"Error in preprocess_image: {e}")
+        raise
+
 
 
 def get_disease_prediction(image_array):

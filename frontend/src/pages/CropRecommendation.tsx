@@ -59,7 +59,7 @@ export default function CropRecommendation() {
         N: parseFloat(formData.nitrogen),
         P: parseFloat(formData.phosphorus),
         K: parseFloat(formData.potassium),
-        phvalue: parseFloat(formData.ph)
+        ph: parseFloat(formData.ph)
       };
 
       const response = await fetch(`${API_BASE_URL}/ai/crop-recommendation`, {
