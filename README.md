@@ -107,7 +107,7 @@ MAIL_PASSWORD=your_app_password
 
    #1. Open PostgreSQL Shell (psql) After installing PostgreSQL, open the SQL Shell (psql):
        On Windows → search for “SQL Shell (psql)” in Start Menu On macOS/Linux → open terminal and type:
-       ```
+   
        psql -U postgres (replace postgres with your username if different)
 
    #2. Create Database Once inside the shell:
