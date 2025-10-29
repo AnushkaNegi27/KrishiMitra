@@ -3,11 +3,14 @@ Krishi Mitra is an intelligent farming assistant designed to empower farmers by 
 
 ##  Key Features
 
-- **Intelligent Crop Recommendation**: Recommends the most suitable crop to grow based on soil nutrient levels (N, P, K), pH, and the farmer’s city (for local weather data).
-    
-- **AI-Powered Disease Detection**: Identifies plant diseases by analyzing images of plant leaves.
-    
+- **Intelligent Crop Recommendation**: Suggests the most suitable crop based on soil nutrients (N, P, K), pH, and farmer’s city (for local weather data).
+- **AI-Powered Disease Detection**: Identifies plant diseases using uploaded leaf images.
+- **Farmer Authentication (JWT)**: Secure login and signup for farmers, with data linked to their individual profiles.
+- **Personalized Dashboard**: Displays real-time stats such as total predictions, crop recommendations, disease detections, and recent activities — all specific to the logged-in farmer.
+- **PostgreSQL Integration**: All user activities (crop recommendations, disease detections) are saved and retrieved from a central database.
+- **Gemini AI Integration**: Provides smart, natural-language insights and cultivation tips for farmers.
 
+    
 ## Technology Stack
 
 - **Machine Learning**: Scikit-learn, TensorFlow (Keras)
@@ -100,7 +103,27 @@ MAIL_PASSWORD=your_app_password
 - Ensure PostgreSQL is running locally or remotely.
 - Replace placeholders like `<your_postgres_user>` with your actual database credentials.
 
-4. Run the Development Server
+4. Database Setup (PostgreSQL)
+
+   #1. Open PostgreSQL Shell (psql) After installing PostgreSQL, open the SQL Shell (psql):
+       On Windows → search for “SQL Shell (psql)” in Start Menu On macOS/Linux → open terminal and type:
+       ```
+       psql -U postgres (replace postgres with your username if different)
+
+   #2. Create Database Once inside the shell:
+       
+       CREATE DATABASE krishimitra;
+       \c krishimitra
+
+   #3. Create Tables Run these queries to create the required tables:
+
+       CREATE TABLE farmers ( id SERIAL PRIMARY KEY, name VARCHAR(100), email VARCHAR(120) UNIQUE NOT NULL, password_hash VARCHAR(200) NOT NULL, city VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+       CREATE TABLE croprecommendations ( id SERIAL PRIMARY KEY, farmer_id INT REFERENCES farmers(id) ON DELETE CASCADE, recommended_crop VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+       CREATE TABLE diseasedetections ( id SERIAL PRIMARY KEY, farmer_id INT REFERENCES farmers(id) ON DELETE CASCADE, predicted_disease VARCHAR(150), confidence DECIMAL(5,2), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+6. Run the Development Server
 Make sure you are in the backend/ directory.
 
 Bash
@@ -172,6 +195,35 @@ Analyzes a plant leaf image, identifies the disease, and provides a description 
 ***
 
 To set up the frontend for KrishiMitra, follow these additional steps after completing the backend configuration.
+
+---
+
+### **3. Farmer Dashboard**
+
+`GET /dashboard`
+
+Returns personalized stats and recent activity for the authenticated farmer.
+
+- **Headers:**
+  - `Authorization: Bearer <JWT_TOKEN>`
+
+- **Success Response (200 OK):**
+```json
+{
+  "totalPredictions": 5,
+  "cropRecommendations": 3,
+  "diseaseDetections": 2,
+  "successRate": 96.5,
+  "recentActivities": [
+    {
+      "type": "Crop Recommendation",
+      "result": "Grapes",
+      "created_at": "2025-10-28T23:17:53.609Z"
+    }
+  ]
+}
+
+---
 
 ***
 
