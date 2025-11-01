@@ -17,7 +17,8 @@ def create_app(config_class=Config):
     # -------------------------------
     # Initialize Flask extensions
     # -------------------------------
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 
     # Flask-Mail configuration (values come from environment variables)
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
