@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,6 @@ export default function SignIn() {
     if (!email || !password) return;
 
     setLoading(true);
-
     try {
       const res = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: "POST",
@@ -29,11 +29,11 @@ export default function SignIn() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", data.farmer.name);
         toast.success("Signin successful!");
-        navigate("/dashboard"); // redirect to dashboard
+        navigate("/dashboard");
       } else {
         toast.error(data.error || "Signin failed");
       }
-    } catch (err) {
+    } catch {
       toast.error("Error connecting to server");
     } finally {
       setLoading(false);
@@ -41,15 +41,16 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
-        <form onSubmit={handleSignIn} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors duration-300">
+      <div className="w-full max-w-md p-8 bg-card text-card-foreground rounded-2xl shadow-lg border border-border animate-fade-in">
+        <h2 className="text-3xl font-bold mb-8 text-center">Welcome Back</h2>
+
+        <form onSubmit={handleSignIn} className="space-y-5">
           <input
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
           <input
@@ -57,26 +58,35 @@ export default function SignIn() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
           <Button
             type="submit"
-            className="w-full gradient-primary text-white font-semibold h-12"
+            className="w-full gradient-primary text-primary-foreground font-semibold h-12 rounded-xl shadow-md hover:opacity-90 active:scale-[0.98] transition-all duration-200"
             disabled={loading}
           >
             {loading ? "Signing In..." : "Sign In"}
           </Button>
         </form>
 
-        {/* Forgot Password */}
-        <div className="mt-4 text-right">
+        <div className="mt-6 flex justify-between text-sm text-muted-foreground">
           <button
             onClick={() => navigate("/forgot-password")}
-            className="text-blue-500 hover:underline"
+            className="hover:text-primary hover:underline transition-colors duration-200"
           >
             Forgot Password?
           </button>
+          <button
+            onClick={() => navigate("/signup")}
+            className="hover:text-primary hover:underline transition-colors duration-200"
+          >
+            Create Account
+          </button>
+        </div>
+
+        <div className="mt-10 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} KrishiMitra. All rights reserved.
         </div>
       </div>
     </div>
