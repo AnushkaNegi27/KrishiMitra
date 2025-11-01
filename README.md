@@ -9,6 +9,7 @@ Krishi Mitra is an intelligent farming assistant designed to empower farmers by 
 - **Personalized Dashboard**: Displays real-time stats such as total predictions, crop recommendations, disease detections, and recent activities — all specific to the logged-in farmer.
 - **PostgreSQL Integration**: All user activities (crop recommendations, disease detections) are saved and retrieved from a central database.
 - **Gemini AI Integration**: Provides smart, natural-language insights and cultivation tips for farmers.
+- Voice Input/Output using Web Speech API (SpeechRecognition + SpeechSynthesis)
 
     
 ## Technology Stack
@@ -30,7 +31,6 @@ Follow these steps to set up and run the AI backend server locally.
 
 1. Clone the Repository
 First, ensure Git LFS is installed on your system (sudo apt-get install git-lfs or brew install git-lfs). Then, clone the repository.
-
 Bash
 ```
 git lfs install
@@ -40,7 +40,6 @@ cd KrishiMitra/
 
 2. Create and Configure the Conda Environment
 This two-step installation process is crucial to ensure all complex dependencies are installed correctly and avoid conflicts.
-
 Bash
 ```
 # Create and activate a new conda environment
@@ -55,6 +54,9 @@ conda install pandas scikit-learn tensorflow pillow joblib
 
 # 2. Install the remaining packages with pip from the requirements file
 pip install -r requirements.txt
+
+#3. Create a folder named as uploads in the backend root directory
+mkdir uploads
 ```
 
 3. Set Up Environment Variables
