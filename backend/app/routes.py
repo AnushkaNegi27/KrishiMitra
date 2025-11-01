@@ -76,7 +76,7 @@ def crop_recommendation_endpoint():
 @token_required
 def disease_detection_endpoint():
     try:
-        farmer_id = g.farmer_id  # 🔹 Fetch farmer_id from JWT
+        farmer_id = g.farmer_id  # Fetch farmer_id from JWT
 
         if 'file' not in request.files:
             return jsonify({"error": "No image file provided."}), 400
@@ -89,10 +89,13 @@ def disease_detection_endpoint():
         image_path = f"uploads/{file.filename}"
         file.save(image_path)
 
-         # 2️⃣ Run ML prediction
+        # 2️⃣ Run ML prediction
         image_array = services.preprocess_image(file)
         predicted_disease, confidence = services.get_disease_prediction(image_array)
-        
+
+        # 🔧 FIX: Convert numpy type to Python float
+        confidence = float(confidence)
+
         formatted_disease = predicted_disease.replace("___", " - ").replace("_", " ")
 
         # 3️⃣ Generate AI description
@@ -101,7 +104,6 @@ def disease_detection_endpoint():
         Provide a practical guide for a farmer in India. 
         Include a simple description and 2-3 actionable treatment steps (organic and chemical).
         """
-
         description = services.generate_ai_description(prompt)
 
         # 4️⃣ Save result in DB
