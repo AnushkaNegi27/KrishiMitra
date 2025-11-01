@@ -117,37 +117,11 @@ MAIL_PASSWORD=your_app_password
 
    #3. Create Tables Run these queries to create the required tables:
 
-       CREATE TABLE farmers (
-    farmer_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(64) NOT NULL,
-    city VARCHAR(100) NOT NULL
-);
+       CREATE TABLE farmers (farmer_id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(100) UNIQUE NOT NULL, password_hash VARCHAR(64) NOT NULL, city VARCHAR(100) NOT NULL);
 
+       CREATE TABLE croprecommendations (id SERIAL PRIMARY KEY, farmer_id INT REFERENCES farmers(farmer_id) ON DELETE CASCADE, nitrogen DOUBLE PRECISION NOT NULL, phosphorus DOUBLE PRECISION NOT NULL, potassium DOUBLE PRECISION NOT NULL, ph_value DOUBLE PRECISION NOT NULL, recommended_crop VARCHAR(100) NOT NULL, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
-       CREATE TABLE croprecommendations (
-    id SERIAL PRIMARY KEY,
-    farmer_id INT REFERENCES farmers(farmer_id) ON DELETE CASCADE,
-    nitrogen DOUBLE PRECISION NOT NULL,
-    phosphorus DOUBLE PRECISION NOT NULL,
-    potassium DOUBLE PRECISION NOT NULL,
-    ph_value DOUBLE PRECISION NOT NULL,
-    recommended_crop VARCHAR(100) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-       CREATE TABLE diseasedetections (
-    id SERIAL PRIMARY KEY,
-    farmer_id INT REFERENCES farmers(farmer_id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    predicted_disease VARCHAR(100) NOT NULL,
-    confidence VARCHAR(20),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+       CREATE TABLE diseasedetections (id SERIAL PRIMARY KEY, farmer_id INT REFERENCES farmers(farmer_id) ON DELETE CASCADE, image_url TEXT NOT NULL, predicted_disease VARCHAR(100) NOT NULL, confidence VARCHAR(20), description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
 
 6. Run the Development Server
