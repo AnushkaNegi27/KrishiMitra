@@ -27,7 +27,7 @@ def get_weather(city_name):
 def preprocess_image(file_storage):
     """Read and preprocess an image file for the disease model."""
     try:
-        file_storage.stream.seek(0)  # reset pointer before reading
+        file_storage.stream.seek(0) 
         image = Image.open(io.BytesIO(file_storage.read())).convert('RGB')
         image = image.resize((128, 128))
         img_array = tf.keras.preprocessing.image.img_to_array(image)
@@ -37,8 +37,6 @@ def preprocess_image(file_storage):
         print(f"Error in preprocess_image: {e}")
         raise
 
-
-
 def get_disease_prediction(image_array):
     """Use the disease model to make a prediction."""
     model = current_app.disease_model
@@ -47,7 +45,7 @@ def get_disease_prediction(image_array):
     predictions = model.predict(image_array)
     predicted_index = np.argmax(predictions[0])
     predicted_class = class_names[predicted_index]
-    confidence = np.max(predictions[0]) * 100
+    confidence = float(np.max(predictions[0]) * 100)
 
     return predicted_class, confidence
 
@@ -56,19 +54,16 @@ def get_crop_recommendation(data):
     """Use the loaded crop model to make a prediction, automatically fetch weather from city."""
     model = current_app.crop_model
 
-    # Extract soil data (corrected key names)
     N = data.get("N")
     P = data.get("P")
     K = data.get("K")
     ph = data.get("ph")
     city = data.get("city")
 
-    # Fetch weather automatically
     temp, hum, rain = get_weather(city)
     if temp is None:
         raise ValueError("City not found or weather API failed.")
 
-    # Prepare model input
     input_features = [N, P, K, temp, hum, ph, rain]
     prediction = model.predict([input_features])
     return prediction[0]

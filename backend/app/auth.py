@@ -5,7 +5,7 @@ import jwt
 import datetime
 from functools import wraps
 from flask_mail import Message
-from . import mail  # import the Mail object from __init__.py
+from . import mail 
 
 auth = Blueprint('auth', __name__)
 
@@ -25,7 +25,7 @@ def token_required(f):
 
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-            g.farmer_id = data['farmer_id']  # ✅ store farmer_id in Flask's g object
+            g.farmer_id = data['farmer_id']  
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Token has expired!"}), 401
         except jwt.InvalidTokenError:

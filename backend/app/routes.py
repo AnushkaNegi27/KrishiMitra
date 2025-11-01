@@ -13,26 +13,22 @@ api = Blueprint('api', __name__)
 @token_required
 def crop_recommendation_endpoint():
     try:
-        # data = request.get_json(force=True)
         farmer_id = g.farmer_id
         
-        # Fetch city from DB
         conn = get_connection()
         if not conn:
             return jsonify({"error": "Database connection failed"}), 500
 
         with conn.cursor() as cursor:
             cursor.execute("SELECT city FROM farmers WHERE farmer_id=%s", (farmer_id,))
-            result = cursor.fetchone()
-        # conn.close()
+            result = cursor.fetchone()        
 
         if not result:
-            # conn.close()
             return jsonify({"error": "Farmer not found"}), 404
 
         city = result['city']
         data = request.get_json(force=True)
-        data['city'] = city  # automatically set city
+        data['city'] = city 
 
         predicted_crop = services.get_crop_recommendation(data)
 
@@ -45,15 +41,12 @@ def crop_recommendation_endpoint():
 
         description = services.generate_ai_description(prompt)
 
-        # ✅ store the result in DB before closing connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO croprecommendations (farmer_id, nitrogen, phosphorus, potassium, ph_value, recommended_crop, description, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             """, (farmer_id, data['N'], data['P'], data['K'], data['ph'], predicted_crop, description))
-            conn.commit()
-
-        
+            conn.commit()        
 
         return jsonify({
             "recommended_crop": predicted_crop,
@@ -76,26 +69,21 @@ def crop_recommendation_endpoint():
 @token_required
 def disease_detection_endpoint():
     try:
-        farmer_id = g.farmer_id  # 🔹 Fetch farmer_id from JWT
-
+        farmer_id = g.farmer_id  
         if 'file' not in request.files:
             return jsonify({"error": "No image file provided."}), 400
-
         file = request.files['file']
         if file.filename == '':
             return jsonify({"error": "No image selected."}), 400
         
-        # 1️⃣ Save the image locally (you can change to Cloudinary later)
         image_path = f"uploads/{file.filename}"
         file.save(image_path)
 
-         # 2️⃣ Run ML prediction
         image_array = services.preprocess_image(file)
         predicted_disease, confidence = services.get_disease_prediction(image_array)
         
         formatted_disease = predicted_disease.replace("___", " - ").replace("_", " ")
 
-        # 3️⃣ Generate AI description
         prompt = f"""
         A plant leaf is identified as having '{formatted_disease}'. 
         Provide a practical guide for a farmer in India. 
@@ -104,7 +92,6 @@ def disease_detection_endpoint():
 
         description = services.generate_ai_description(prompt)
 
-        # 4️⃣ Save result in DB
         conn = get_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -115,7 +102,6 @@ def disease_detection_endpoint():
             conn.commit()
         conn.close()
 
-        # 5️⃣ Return response
         return jsonify({
             "predicted_disease": formatted_disease,
             "description": description,
@@ -156,25 +142,20 @@ def get_dashboard():
         conn = get_connection()
         cur = conn.cursor()
 
-        # ✅ Fetch crop recommendations
         cur.execute("""
             SELECT COUNT(*) AS count FROM croprecommendations WHERE farmer_id = %s
         """, (farmer_id,))
         crop_reco_count = cur.fetchone()['count']
 
-        # ✅ Fetch disease detections
         cur.execute("""
             SELECT COUNT(*) AS count FROM diseasedetections WHERE farmer_id = %s
         """, (farmer_id,))
         disease_detect_count = cur.fetchone()['count']
 
-        # ✅ Calculate total predictions
         total_predictions = crop_reco_count + disease_detect_count
 
-        # ✅ Example success rate
         success_rate = 100 if total_predictions == 0 else round(90 + (10 * (crop_reco_count / max(1, total_predictions))), 2)
 
-        # ✅ Fetch recent activities
         cur.execute("""
             SELECT 'Crop Recommendation' AS type, recommended_crop AS result, created_at
             FROM croprecommendations
