@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -31,11 +32,11 @@ export default function SignUp() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", name);
         toast.success("Signup successful!");
-        navigate("/dashboard"); // redirect to dashboard
+        navigate("/dashboard");
       } else {
         toast.error(data.error || "Signup failed");
       }
-    } catch (err) {
+    } catch {
       toast.error("Error connecting to server");
     } finally {
       setLoading(false);
@@ -43,22 +44,23 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
-        <form onSubmit={handleSignUp} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors duration-300">
+      <div className="w-full max-w-md p-8 bg-card text-card-foreground rounded-2xl shadow-lg border border-border animate-fade-in">
+        <h2 className="text-3xl font-bold mb-8 text-center">Create Account</h2>
+
+        <form onSubmit={handleSignUp} className="space-y-5">
           <input
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
           <input
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
           <input
@@ -66,24 +68,39 @@ export default function SignUp() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
           <input
             placeholder="City"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
             required
           />
+
           <Button
             type="submit"
-            className="w-full gradient-primary text-white font-semibold h-12"
+            className="w-full gradient-primary text-primary-foreground font-semibold h-12 rounded-xl shadow-md hover:opacity-90 active:scale-[0.98] transition-all duration-200"
             disabled={loading}
           >
             {loading ? "Signing Up..." : "Sign Up"}
           </Button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            onClick={() => navigate("/signin")}
+            className="hover:text-primary hover:underline transition-colors duration-200"
+          >
+            Sign In
+          </button>
+        </div>
+
+        <div className="mt-10 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} KrishiMitra. All rights reserved.
+        </div>
       </div>
     </div>
   );
