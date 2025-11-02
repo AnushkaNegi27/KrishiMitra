@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FaSeedling, FaHome, FaInfoCircle } from "react-icons/fa";
-import { FaTachometerAlt, FaLeaf } from "react-icons/fa";
+import { FaTachometerAlt, FaLeaf, FaRobot } from "react-icons/fa";
 import { GiPlantSeed } from "react-icons/gi";
 import { Menu, X, LogOut } from "lucide-react";
 
@@ -33,8 +33,17 @@ export const Navbar = () => {
   const protectedLinks = token
     ? [
         { path: "/dashboard", label: "Dashboard", icon: FaTachometerAlt },
-        { path: "/crop-recommendation", label: "Crop Recommendation", icon: GiPlantSeed },
-        { path: "/disease-detection", label: "Disease Detection", icon: FaLeaf },
+        {
+          path: "/crop-recommendation",
+          label: "Crop Recommendation",
+          icon: GiPlantSeed,
+        },
+        {
+          path: "/disease-detection",
+          label: "Disease Detection",
+          icon: FaLeaf,
+        },
+        { path: "/ai-assistance", label: "AI Assistance", icon: FaRobot },
       ]
     : [];
 
@@ -91,7 +100,9 @@ export const Navbar = () => {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg py-2 border animate-fade-in">
-                    <p className="px-4 py-2 text-sm text-gray-700 border-b">{userName}</p>
+                    <p className="px-4 py-2 text-sm text-gray-700 border-b">
+                      {userName}
+                    </p>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
@@ -104,10 +115,14 @@ export const Navbar = () => {
             ) : (
               <div className="hidden md:flex items-center gap-2">
                 <Link to="/signin">
-                  <Button variant="outline" size="sm">Sign In</Button>
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button size="sm" className="gradient-primary">Sign Up</Button>
+                  <Button size="sm" className="gradient-primary">
+                    Sign Up
+                  </Button>
                 </Link>
               </div>
             )}
@@ -117,7 +132,11 @@ export const Navbar = () => {
               className="md:hidden p-2 hover:bg-muted rounded-lg"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -145,7 +164,9 @@ export const Navbar = () => {
               {!userName && (
                 <div className="flex flex-col gap-2 mt-4 px-4">
                   <Link to="/signin">
-                    <Button variant="outline" className="w-full">Sign In</Button>
+                    <Button variant="outline" className="w-full">
+                      Sign In
+                    </Button>
                   </Link>
                   <Link to="/signup">
                     <Button className="w-full gradient-primary">Sign Up</Button>

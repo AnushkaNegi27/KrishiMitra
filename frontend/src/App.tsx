@@ -15,6 +15,7 @@ import DiseaseDetection from "./pages/DiseaseDetection";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AIAssistance from "./pages/AIAssistance";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <DiseaseDetection />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-assistance"
+                element={
+                  <ProtectedRoute>
+                    <AIAssistance />
                   </ProtectedRoute>
                 }
               />
