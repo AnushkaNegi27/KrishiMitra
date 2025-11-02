@@ -1,14 +1,22 @@
 from flask import Blueprint, request, jsonify, g
 from db import get_connection
 from . import services
-from .auth import token_required 
+# importing both decorators now for vapi ai to work 
+from .auth import token_required, token_optional 
 import datetime
+import os
+import uuid
+import requests
+import io
+from werkzeug.utils import secure_filename
+from flask import send_from_directory, current_app
+import traceback
+import json
+
 
 api = Blueprint('api', __name__)
 
-# ------------------------------
-# Crop Recommendation Endpoint
-# ------------------------------
+
 @api.route('/ai/crop-recommendation', methods=['POST'])
 @token_required
 def crop_recommendation_endpoint():
@@ -45,7 +53,7 @@ def crop_recommendation_endpoint():
 
         description = services.generate_ai_description(prompt)
 
-        # ✅ store the result in DB before closing connection
+        # store the result in DB before closing connection
         with conn.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO croprecommendations (farmer_id, nitrogen, phosphorus, potassium, ph_value, recommended_crop, description, created_at)
@@ -69,9 +77,6 @@ def crop_recommendation_endpoint():
             conn.close()
 
 
-# ------------------------------
-# Disease Detection Endpoint
-# ------------------------------
 @api.route('/ai/disease-detection', methods=['POST'])
 @token_required
 def disease_detection_endpoint():
@@ -85,20 +90,20 @@ def disease_detection_endpoint():
         if file.filename == '':
             return jsonify({"error": "No image selected."}), 400
         
-        # 1️⃣ Save the image locally (you can change to Cloudinary later)
+        # Save the image locally (you can change to Cloudinary later)
         image_path = f"uploads/{file.filename}"
         file.save(image_path)
 
-        # 2️⃣ Run ML prediction
+        # Run ML prediction
         image_array = services.preprocess_image(file)
         predicted_disease, confidence = services.get_disease_prediction(image_array)
 
-        # 🔧 FIX: Convert numpy type to Python float
+        # FIX: Convert numpy type to Python float
         confidence = float(confidence)
 
         formatted_disease = predicted_disease.replace("___", " - ").replace("_", " ")
 
-        # 3️⃣ Generate AI description
+        # Generating AI description
         prompt = f"""
         A plant leaf is identified as having '{formatted_disease}'. 
         Provide a practical guide for a farmer in India. 
@@ -106,7 +111,7 @@ def disease_detection_endpoint():
         """
         description = services.generate_ai_description(prompt)
 
-        # 4️⃣ Save result in DB
+        # Save result in DB
         conn = get_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -117,7 +122,7 @@ def disease_detection_endpoint():
             conn.commit()
         conn.close()
 
-        # 5️⃣ Return response
+        # Return response
         return jsonify({
             "predicted_disease": formatted_disease,
             "description": description,
@@ -127,9 +132,7 @@ def disease_detection_endpoint():
         print(f"Error in disease detection endpoint: {e}")
         return jsonify({"error": "An internal error occurred."}), 500
 
-# ------------------------------
-# Test DB Route
-# ------------------------------
+
 test_bp = Blueprint('test', __name__)
 
 @test_bp.route('/test-db', methods=['GET'])
@@ -145,9 +148,6 @@ def test_db_connection():
         return jsonify({"status": "error", "message": "Could not connect to database"}), 500
     
 
-# ------------------------------
-# Dashboard Stats Endpoint
-# ------------------------------
 @api.route('/dashboard', methods=['GET'])
 @token_required
 def get_dashboard():
@@ -158,25 +158,25 @@ def get_dashboard():
         conn = get_connection()
         cur = conn.cursor()
 
-        # ✅ Fetch crop recommendations
+        # Fetch crop recommendations
         cur.execute("""
             SELECT COUNT(*) AS count FROM croprecommendations WHERE farmer_id = %s
         """, (farmer_id,))
         crop_reco_count = cur.fetchone()['count']
 
-        # ✅ Fetch disease detections
+        # Fetch disease detections
         cur.execute("""
             SELECT COUNT(*) AS count FROM diseasedetections WHERE farmer_id = %s
         """, (farmer_id,))
         disease_detect_count = cur.fetchone()['count']
 
-        # ✅ Calculate total predictions
+        # Calculate total predictions
         total_predictions = crop_reco_count + disease_detect_count
 
-        # ✅ Example success rate
+        # Example success rate
         success_rate = 100 if total_predictions == 0 else round(90 + (10 * (crop_reco_count / max(1, total_predictions))), 2)
 
-        # ✅ Fetch recent activities
+        # Fetch recent activities
         cur.execute("""
             SELECT 'Crop Recommendation' AS type, recommended_crop AS result, created_at
             FROM croprecommendations
@@ -214,3 +214,132 @@ def get_dashboard():
         import traceback
         print("Error in /dashboard route:", traceback.format_exc())
         return jsonify({"error": "Failed to fetch dashboard data"}), 500
+
+
+#this end point is for vapi
+@api.route('/vapi-webhook', methods=['POST'])
+@token_optional # Use the optional decorator this was added because duing configuration 
+#in vapi i was not able to pass the dynamic token (jwt) of the user
+def vapi_webhook():
+    
+    print("\n [VAPI WEBHOOK CALLED (HYBRID AUTH)] ")
+    payload = request.json
+    print(f"1. RECEIVED PAYLOAD: {payload}")
+
+    # g.farmer_id was set (or not set) by our @token_optional decorator
+    farmer_id = getattr(g, 'farmer_id', None) 
+    
+    if 'message' in payload and payload['message'].get('type') == 'tool-calls':
+        print("2. Detected 'tool-calls' message.")
+        
+        tool_calls = payload['message'].get('toolCalls', [])
+        
+        if not tool_calls:
+            print("!!! ERROR: 'tool-calls' was empty.")
+            return jsonify({"error": "Empty tool calls"}), 400
+            
+        function_call = tool_calls[0]
+        name = function_call['function'].get('name')
+        parameters = function_call['function'].get('arguments', {})
+        tool_call_id = function_call.get("id") 
+
+        print(f"3. FUNCTION CALL: {name}")
+        print(f"4. PARAMETERS: {parameters}")
+
+        conn = get_connection()
+        if not conn:
+            print("!!! ERROR: Database connection failed.")
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        try:
+            if name == 'getCropRecommendation':
+                
+                # This is dynamic logic 
+                if farmer_id:
+                    # if user is authenticated then get city from DB
+                    # todo: this will mainly not be called for the time being , we can fix this later on 
+                    print("INFO: User is Authenticated. Fetching city from DB.")
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT city FROM farmers WHERE farmer_id=%s", (farmer_id,))
+                        result = cursor.fetchone()
+                    
+                    if not result:
+                        print("!!! ERROR: Farmer not found.")
+                        return jsonify({"error": "Farmer not found"}), 404
+                    city = result['city']
+                else:
+                    # assuming other user that does not have token  as guest
+                    # Get city from vapi's parameters
+                    print("INFO: User is a Guest. Getting city from parameters.")
+                    city = parameters.get('city')
+                    if not city:
+                        print("!!! ERROR: Guest user did not provide a city.")
+                        return jsonify({"error": "City parameter is missing"}), 400
+                #end of the dynamic logic
+
+                data = {
+                    "N": parameters.get('N'),
+                    "P": parameters.get('P'),
+                    "K": parameters.get('K'),
+                    "ph": parameters.get('ph'),
+                    "city": city 
+                }
+
+                print(f"5. DATA FOR SERVICE: {data}")
+                predicted_crop = services.get_crop_recommendation(data)
+                print(f"6. SERVICE RETURNED CROP: {predicted_crop}")
+
+                prompt = f"Based on agricultural data where a model recommended '{predicted_crop}', provide a concise, helpful recommendation for a farmer in India. Keep it to 3-4 sentences."
+                description = services.generate_ai_description(prompt)
+                
+                # this will be dynamically locic for saving as well 
+                if farmer_id:
+                    print("INFO: Saving recommendation to DB for farmer_id:", farmer_id)
+                    with conn.cursor() as cursor:
+                        cursor.execute("""
+                            INSERT INTO croprecommendations (farmer_id, nitrogen, phosphorus, potassium, ph_value, recommended_crop, description, created_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                        """, (farmer_id, data['N'], data['P'], data['K'], data['ph'], predicted_crop, description))
+                        conn.commit()
+                else:
+                    print("INFO: Guest user. Skipping database save.")
+                # end of dynamic logic for the saving to the db
+
+                result_data = {
+                    "recommended_crop": predicted_crop,
+                    "description": description
+                }
+                
+                result_string = json.dumps(result_data)
+                print(f"7. SUCCESS: Returning result to Vapi: {result_string}")
+                print("--- [END VAPI WEBHOOK] ---\n")
+                
+                response_data = {
+                    "results": [
+                        {
+                            "toolCallId": tool_call_id,
+                            "result": result_string
+                        }
+                    ]
+                }
+                return jsonify(response_data)
+
+        except Exception as e:
+            print(f"!!! 5. CRITICAL ERROR in Vapi webhook: {e}")
+            print(traceback.format_exc()) 
+            print("--- [END VAPI WEBHOOK] ---\n")
+            error_response = {
+                "results": [
+                    {
+                        "toolCallId": tool_call_id,
+                        "error": str(e)
+                    }
+                ]
+            }
+            return jsonify(error_response), 200
+        finally:
+            if conn:
+                conn.close()
+
+    print("[END VAPI WEBHOOK]\n")
+    return jsonify({"status": "ok"})
