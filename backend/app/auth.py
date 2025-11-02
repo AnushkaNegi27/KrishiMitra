@@ -9,10 +9,13 @@ from . import mail  # import the Mail object from __init__.py
 
 auth = Blueprint('auth', __name__)
 
-# -----------------------
-# JWT token helper
-# -----------------------
+
+# JWT token helper 
 def token_required(f):
+    """
+    Decorator to protect routes that require a valid JWT token.
+    Rejects the request if the token is missing or invalid.
+    """
     @wraps(f)
     def decorator(*args, **kwargs):
         token = None
@@ -25,7 +28,7 @@ def token_required(f):
 
         try:
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-            g.farmer_id = data['farmer_id']  # ✅ store farmer_id in Flask's g object
+            g.farmer_id = data['farmer_id']  # store farmer_id in Flask's g object
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Token has expired!"}), 401
         except jwt.InvalidTokenError:
@@ -34,9 +37,38 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorator
 
-# -------------------
+
+# --- optional token ---
+def token_optional(f):
+    """
+    Decorator that checks for a token, but does not reject the request.
+    If a valid token is present, it sets g.farmer_id.
+    If no token (or an invalid token) is present, it sets g.farmer_id to None.
+    """
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            bearer = request.headers.get('Authorization')
+            token = bearer.split()[1] if len(bearer.split()) > 1 else None
+            
+            if token:
+                try:
+                    data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+                    g.farmer_id = data['farmer_id']  # Set farmer_id if token is valid
+                except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+                    g.farmer_id = None # Token is bad, treat as guest
+            else:
+                g.farmer_id = None # Header malformed
+        else:
+            g.farmer_id = None # No token, treat as guest
+            
+        return f(*args, **kwargs) # Always continues
+    return decorator
+
+
+
 # Sign Up
-# -------------------
 @auth.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json(force=True)
@@ -77,9 +109,7 @@ def signup():
     return jsonify({"message": "Signup successful", "token": token})
 
 
-# -------------------
 # Sign In
-# -------------------
 @auth.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json(force=True)
@@ -120,9 +150,7 @@ def signin():
     })
 
 
-# -------------------
 # Forgot Password
-# -------------------
 @auth.route('/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json()
@@ -159,9 +187,8 @@ def forgot_password():
     return jsonify({"message": "Password reset link sent to your email"}), 200
 
 
-# -------------------
+
 # Reset Password
-# -------------------
 @auth.route('/reset-password', methods=['POST'])
 def reset_password():
     data = request.get_json()
@@ -196,4 +223,3 @@ def reset_password():
         conn.close()
 
     return jsonify({"message": "Password has been reset successfully"}), 200
-
