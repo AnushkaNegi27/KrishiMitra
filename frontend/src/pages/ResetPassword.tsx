@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -24,7 +26,6 @@ export default function ResetPassword() {
     setLoading(true);
     setError("");
 
-    // Token check
     if (!token) {
       setError("Invalid or missing token. Redirecting...");
       setTimeout(() => navigate("/forgot-password"), 4000);
@@ -32,7 +33,6 @@ export default function ResetPassword() {
       return;
     }
 
-    // Password strength check
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       setError(
@@ -56,12 +56,11 @@ export default function ResetPassword() {
         navigate("/signin");
       } else {
         setError(data.message || "Something went wrong");
-        // Auto-redirect if token expired
         if (data.message?.toLowerCase().includes("expired")) {
           setTimeout(() => navigate("/forgot-password"), 4000);
         }
       }
-    } catch (err) {
+    } catch {
       setError("Network error");
     } finally {
       setLoading(false);
@@ -90,40 +89,70 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-white shadow-md rounded">
-      <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
-      {error && (
-        <p className={`mb-4 ${error.toLowerCase().includes("expired") ? "text-yellow-600" : "text-red-600"}`}>
-          {error}
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors duration-300">
+      <div className="w-full max-w-md p-8 bg-card text-card-foreground rounded-2xl shadow-lg border border-border animate-fade-in">
+        <h2 className="text-3xl font-bold mb-4 text-center bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
+          Reset Password
+        </h2>
+        <p className="text-center text-muted-foreground mb-6 text-sm">
+          Enter your new password below to reset your account.
         </p>
-      )}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="password"
-          placeholder="Enter new password"
-          className="w-full p-2 border border-gray-300 rounded mb-4"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          disabled={loading}
-        >
-          {loading ? "Resetting..." : "Reset Password"}
-        </button>
-      </form>
 
-      {/* Resend link button if token expired */}
-      {error.toLowerCase().includes("expired") && (
-        <button
-          onClick={handleResendLink}
-          className="mt-4 w-full text-blue-600 hover:underline"
-        >
-          Resend Reset Link
-        </button>
-      )}
+        {error && (
+          <p
+            className={`mb-4 text-center text-sm ${
+              error.toLowerCase().includes("expired")
+                ? "text-yellow-600"
+                : "text-red-600"
+            }`}
+          >
+            {error}
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <input
+            type="password"
+            placeholder="Enter new password"
+            className="w-full p-3.5 border border-border bg-input text-foreground rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition duration-200"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+
+          <Button
+            type="submit"
+            className="w-full gradient-primary text-primary-foreground font-semibold h-12 rounded-xl shadow-md hover:opacity-90 active:scale-[0.98] transition-all duration-200"
+            disabled={loading}
+          >
+            {loading ? "Resetting..." : "Reset Password"}
+          </Button>
+        </form>
+
+        {error.toLowerCase().includes("expired") && (
+          <Button
+            onClick={handleResendLink}
+            variant="link"
+            className="mt-4 w-full text-primary hover:underline text-sm"
+          >
+            Resend Reset Link
+          </Button>
+        )}
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Remembered your password?{" "}
+          <a
+            href="/signin"
+            className="hover:text-primary hover:underline transition-colors duration-200"
+          >
+            Sign In
+          </a>
+        </div>
+
+        <div className="mt-10 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} KrishiMitra. All rights reserved.
+        </div>
+      </div>
     </div>
   );
 }
