@@ -336,3 +336,82 @@ def vapi_webhook():
 
     print("[END VAPI WEBHOOK]\n")
     return jsonify({"status": "ok"})
+
+
+# end point vapi calls to get weather info about the city
+
+@api.route('/vapi-weather', methods=['POST'])
+def vapi_weather():
+    
+    print("\nvapi weather webhook called")
+    payload = request.json
+    print(f"payload receive : {payload}")
+
+    # Default error response format 
+    error_response = lambda msg, tool_id: jsonify({
+        "results": [{"toolCallId": tool_id, "error": str(msg)}]
+    }), 200 
+
+    if 'message' in payload and payload['message'].get('type') == 'tool-calls':
+        print("2. Detected 'tool-calls' message.")
+        
+        try:
+            function_call = payload['message']['toolCalls'][0]
+            name = function_call['function'].get('name')
+            parameters = function_call['function'].get('arguments', {})
+            tool_call_id = function_call.get("id")
+
+            if name != 'get_weather':
+                return error_response("Wrong tool called", tool_call_id)
+
+            city = parameters.get('city')
+            if not city:
+                return error_response("City parameter is missing", tool_call_id)
+            
+            print(f"3. FUNCTION CALL: {name} for city: {city}")
+
+            WEATHER_API_KEY = current_app.config['WEATHER_API_KEY']
+            if not WEATHER_API_KEY:
+                return error_response("Server is missing weather API key", tool_call_id)
+
+            # Call the OpenWeatherMap API
+            weather_url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+            
+            weather_response = requests.get(weather_url)
+            weather_data = weather_response.json()
+
+            if weather_response.status_code != 200:
+                return error_response(weather_data.get('message', 'Weather API error'), tool_call_id)
+
+            # Extract the data
+            result_data = {
+                "city": weather_data.get('name'),
+                "temperature": weather_data['main'].get('temp'),
+                "humidity": weather_data['main'].get('humidity'),
+                "condition": weather_data['weather'][0].get('description'),
+                "wind_speed": weather_data['wind'].get('speed')
+            }
+
+            # the 'result' must be a single-line STRING
+            result_string = json.dumps(result_data)
+
+            print(f"4. success returning weather data; {result_string}")
+            print("end of vapi webhook\n")
+            
+            #building the final respolnse to send to vapi
+            response_data = {
+                "results": [
+                    {
+                        "toolCallId": tool_call_id,
+                        "result": result_string
+                    }
+                ]
+            }
+            return jsonify(response_data)
+
+        except Exception as e:
+            print(f"critical error in weatehr webhook {e}")
+            print(traceback.format_exc())
+            return error_response(str(e), tool_call_id)
+
+    return jsonify({"status": "ok"})
