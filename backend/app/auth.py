@@ -5,7 +5,7 @@ import jwt
 import datetime
 from functools import wraps
 from flask_mail import Message
-from . import mail  # import the Mail object from __init__.py
+from . import mail 
 
 auth = Blueprint('auth', __name__)
 

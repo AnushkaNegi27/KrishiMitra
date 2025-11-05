@@ -7,7 +7,6 @@ from config import Config
 from flask_mail import Mail
 import os
 
-# Initialize Mail globally so it can be imported in auth.py
 mail = Mail()
 
 def create_app(config_class=Config):
@@ -20,7 +19,7 @@ def create_app(config_class=Config):
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
-    # Flask-Mail configuration (values come from environment variables)
+    # Flask-Mail configuration
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 465
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')

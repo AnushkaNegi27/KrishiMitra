@@ -21,26 +21,22 @@ api = Blueprint('api', __name__)
 @token_required
 def crop_recommendation_endpoint():
     try:
-        # data = request.get_json(force=True)
         farmer_id = g.farmer_id
         
-        # Fetch city from DB
         conn = get_connection()
         if not conn:
             return jsonify({"error": "Database connection failed"}), 500
 
         with conn.cursor() as cursor:
             cursor.execute("SELECT city FROM farmers WHERE farmer_id=%s", (farmer_id,))
-            result = cursor.fetchone()
-        # conn.close()
+            result = cursor.fetchone()        
 
         if not result:
-            # conn.close()
             return jsonify({"error": "Farmer not found"}), 404
 
         city = result['city']
         data = request.get_json(force=True)
-        data['city'] = city  # automatically set city
+        data['city'] = city 
 
         predicted_crop = services.get_crop_recommendation(data)
 
@@ -59,9 +55,7 @@ def crop_recommendation_endpoint():
                 INSERT INTO croprecommendations (farmer_id, nitrogen, phosphorus, potassium, ph_value, recommended_crop, description, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             """, (farmer_id, data['N'], data['P'], data['K'], data['ph'], predicted_crop, description))
-            conn.commit()
-
-        
+            conn.commit()        
 
         return jsonify({
             "recommended_crop": predicted_crop,
@@ -85,7 +79,6 @@ def disease_detection_endpoint():
 
         if 'file' not in request.files:
             return jsonify({"error": "No image file provided."}), 400
-
         file = request.files['file']
         if file.filename == '':
             return jsonify({"error": "No image selected."}), 400
