@@ -16,6 +16,8 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AIAssistance from "./pages/AIAssistance";
+import UserHistory from "./pages/UserHistory";
+
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,15 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/history"
+                element={
+                  <ProtectedRoute>
+                    <UserHistory />
+                  </ProtectedRoute>
+                }
+              />
+
 
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />

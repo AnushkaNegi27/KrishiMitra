@@ -415,3 +415,65 @@ def vapi_weather():
             return error_response(str(e), tool_call_id)
 
     return jsonify({"status": "ok"})
+
+@api.route('/history', methods=['GET'])
+@token_required
+def get_history():
+    try:
+        farmer_id = g.farmer_id
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Combine 2 tables INCLUDING IMAGE URL
+        cur.execute("""
+            SELECT 
+                'Crop Recommendation' AS type,
+                recommended_crop AS result,
+                description AS gemini_response,
+                NULL AS image_url,
+                created_at
+            FROM croprecommendations
+            WHERE farmer_id = %s
+            
+            UNION ALL
+
+            SELECT 
+                'Disease Detection' AS type,
+                predicted_disease AS result,
+                description AS gemini_response,
+                image_url,
+                created_at
+            FROM diseasedetections
+            WHERE farmer_id = %s
+
+            ORDER BY created_at DESC
+        """, (farmer_id, farmer_id))
+
+        rows = cur.fetchall()
+
+        history = []
+        for row in rows:
+            history.append({
+                "type": row["type"],
+                "result": row["result"],
+                "gemini_response": row["gemini_response"],
+                "image_url": row["image_url"],   # <-- IMPORTANT
+                "created_at": row["created_at"].isoformat()
+            })
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"history": history}), 200
+
+    except Exception as e:
+        print("Error in /history:", e)
+        return jsonify({"error": "Failed to fetch history"}), 500
+
+
+
+@api.route('/uploads/<path:filename>')
+def serve_uploads(filename):
+    upload_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads')
+    return send_from_directory(upload_folder, filename)
