@@ -221,15 +221,7 @@ def send_verify_otp():
                 """
             )
 
-            # If the table existed from an older deploy it might be missing the last_sent column
-            # Ensure the column exists to avoid UndefinedColumn errors when we query it.
-            try:
-                cursor.execute("ALTER TABLE EmailVerifications ADD COLUMN IF NOT EXISTS last_sent TIMESTAMP")
-            except Exception:
-                # best-effort: if ALTER fails (older Postgres versions), continue and handle missing column later
-                pass
 
-            # rate-limit: check last_sent
             cursor.execute("SELECT last_sent FROM EmailVerifications WHERE email = %s", (email,))
             prev = cursor.fetchone()
             import datetime as _dt, random, hashlib
