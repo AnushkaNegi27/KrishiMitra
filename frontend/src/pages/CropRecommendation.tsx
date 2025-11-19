@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { GiPlantSeed } from "react-icons/gi";
-import { Loader2, Sparkles, CheckCircle2, Mic, MicOff } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api";
 
@@ -24,7 +24,6 @@ export default function CropRecommendation() {
     potassium: "",
     ph: ""
   });
-  const [listening, setListening] = useState(false);
 
   // Handle manual input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +40,6 @@ export default function CropRecommendation() {
     setResult(null);
 
     try {
-      // Get JWT token
       const token = localStorage.getItem("token");
       if (!token) {
         toast({
@@ -53,9 +51,7 @@ export default function CropRecommendation() {
         return;
       }
 
-      // Prepare payload
       const requestBody = {
-        // farmer_id,
         N: parseFloat(formData.nitrogen),
         P: parseFloat(formData.phosphorus),
         K: parseFloat(formData.potassium),
@@ -79,17 +75,11 @@ export default function CropRecommendation() {
       const data: RecommendationResult = await response.json();
       setResult(data);
 
-      // Speak the recommendation
-      const synth = window.speechSynthesis;
-      const utterance = new SpeechSynthesisUtterance(
-        `Recommended crop is ${data.recommended_crop}. ${data.description}`
-      );
-      synth.speak(utterance);
-
       toast({
         title: "Prediction Complete! 🌱",
         description: `Recommended crop: ${data.recommended_crop}`,
       });
+
     } catch (error: any) {
       console.error("Error calling crop recommendation API:", error);
       toast({
@@ -100,50 +90,6 @@ export default function CropRecommendation() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Handle voice input
-  const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({
-        title: "Not Supported",
-        description: "Speech recognition is not supported in this browser.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => setListening(true);
-    recognition.onend = () => setListening(false);
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript.toLowerCase();
-      toast({
-        title: "Voice Captured 🎤",
-        description: transcript,
-      });
-
-      // Extract numbers from transcript
-      const nitrogenMatch = transcript.match(/nitrogen\s*(\d+(\.\d+)?)/);
-      const phosphorusMatch = transcript.match(/phosphorus\s*(\d+(\.\d+)?)/);
-      const potassiumMatch = transcript.match(/potassium\s*(\d+(\.\d+)?)/);
-      const phMatch = transcript.match(/p\s*h\s*(\d+(\.\d+)?)/);
-
-      setFormData({
-        nitrogen: nitrogenMatch ? nitrogenMatch[1] : formData.nitrogen,
-        phosphorus: phosphorusMatch ? phosphorusMatch[1] : formData.phosphorus,
-        potassium: potassiumMatch ? potassiumMatch[1] : formData.potassium,
-        ph: phMatch ? phMatch[1] : formData.ph,
-      });
-    };
-
-    recognition.start();
   };
 
   const inputFields = [
@@ -203,7 +149,7 @@ export default function CropRecommendation() {
               ))}
             </div>
 
-            <div className="pt-4 flex flex-col gap-3">
+            <div className="pt-4">
               <Button type="submit" disabled={loading} className="w-full gradient-primary h-12 text-lg">
                 {loading ? (
                   <>
@@ -214,25 +160,6 @@ export default function CropRecommendation() {
                   <>
                     <Sparkles className="mr-2 h-5 w-5" />
                     Get Recommendation
-                  </>
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={startListening}
-                className="flex items-center justify-center gap-2"
-              >
-                {listening ? (
-                  <>
-                    <MicOff className="h-5 w-5 text-red-500" />
-                    Listening...
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-5 w-5 text-green-500" />
-                    Speak Input
                   </>
                 )}
               </Button>
@@ -276,4 +203,3 @@ export default function CropRecommendation() {
     </div>
   );
 }
-
