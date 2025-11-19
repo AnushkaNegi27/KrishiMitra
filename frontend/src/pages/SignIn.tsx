@@ -28,8 +28,15 @@ export default function SignIn() {
       if (res.ok) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", data.farmer.name);
-        toast.success("Signin successful!");
-        navigate("/dashboard");
+        // if email not verified, send user to verify page
+        if (data.farmer && data.farmer.email_verified === false) {
+          localStorage.setItem("verifyEmail", email);
+          toast("Please verify your email before continuing");
+          navigate("/verify-email");
+        } else {
+          toast.success("Signin successful!");
+          navigate("/dashboard");
+        }
       } else {
         toast.error(data.error || "Signin failed");
       }

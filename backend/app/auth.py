@@ -125,15 +125,45 @@ def signin():
     if not conn:
         return jsonify({"error": "Database connection failed"}), 500
 
+    result = None
     try:
         with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT farmer_id, name, city FROM Farmers WHERE email=%s AND password_hash=%s",
-                (email, password_hash)
-            )
+            # check if email_verified column exists
+            try:
+                cursor.execute(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farmers' AND column_name='email_verified') AS exists"
+                )
+                exists_row = cursor.fetchone()
+                if isinstance(exists_row, dict):
+                    has_email_verified = bool(exists_row.get('exists', False))
+                else:
+                    has_email_verified = bool(exists_row[0])
+            except Exception:
+                has_email_verified = False
+
+            if has_email_verified:
+                cursor.execute(
+                    "SELECT farmer_id, name, city, email_verified FROM Farmers WHERE email=%s AND password_hash=%s",
+                    (email, password_hash)
+                )
+            else:
+                cursor.execute(
+                    "SELECT farmer_id, name, city FROM Farmers WHERE email=%s AND password_hash=%s",
+                    (email, password_hash)
+                )
             result = cursor.fetchone()
-    finally:
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         conn.close()
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
     if not result:
         return jsonify({"error": "Invalid credentials"}), 401
@@ -143,11 +173,215 @@ def signin():
         "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)
     }, current_app.config['SECRET_KEY'], algorithm="HS256")
 
+    # safe extraction of email_verified
+    try:
+        email_verified = bool(result['email_verified']) if isinstance(result, dict) and 'email_verified' in result else False
+    except Exception:
+        try:
+            email_verified = bool(result[3])
+        except Exception:
+            email_verified = False
+
     return jsonify({
         "message": "Signin successful",
         "token": token,
-        "farmer": {"id": result['farmer_id'], "name": result['name'], "city": result['city']}
+        "farmer": {"id": result['farmer_id'] if isinstance(result, dict) else result[0], "name": result['name'] if isinstance(result, dict) else result[1], "city": result['city'] if isinstance(result, dict) else result[2], "email_verified": email_verified}
     })
+
+
+@auth.route('/send-verify-otp', methods=['POST'])
+def send_verify_otp():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({"message": "Email is required"}), 400
+
+    conn = get_connection()
+    if not conn:
+        return jsonify({"message": "Database connection failed"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # ensure user exists
+            cursor.execute("SELECT farmer_id FROM Farmers WHERE email = %s", (email,))
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({"message": "No account found with this email"}), 404
+
+            # ensure verification table exists
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS EmailVerifications (
+                    email TEXT PRIMARY KEY,
+                    otp_hash TEXT NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    last_sent TIMESTAMP
+                )
+                """
+            )
+
+            # If the table existed from an older deploy it might be missing the last_sent column
+            # Ensure the column exists to avoid UndefinedColumn errors when we query it.
+            try:
+                cursor.execute("ALTER TABLE EmailVerifications ADD COLUMN IF NOT EXISTS last_sent TIMESTAMP")
+            except Exception:
+                # best-effort: if ALTER fails (older Postgres versions), continue and handle missing column later
+                pass
+
+            # rate-limit: check last_sent
+            cursor.execute("SELECT last_sent FROM EmailVerifications WHERE email = %s", (email,))
+            prev = cursor.fetchone()
+            import datetime as _dt, random, hashlib
+            now = _dt.datetime.utcnow()
+            if prev:
+                last_sent = prev['last_sent'] if isinstance(prev, dict) and 'last_sent' in prev else prev[0]
+                if last_sent and (now - last_sent).total_seconds() < 60:
+                    return jsonify({"message": "Too many requests, try again later"}), 429
+
+            otp = f"{random.randint(0, 999999):06d}"
+            otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+            expires = now + _dt.timedelta(minutes=15)
+
+            cursor.execute(
+                "INSERT INTO EmailVerifications (email, otp_hash, expires_at, last_sent) VALUES (%s,%s,%s,%s) ON CONFLICT (email) DO UPDATE SET otp_hash = EXCLUDED.otp_hash, expires_at = EXCLUDED.expires_at, last_sent = EXCLUDED.last_sent",
+                (email, otp_hash, expires, now)
+            )
+            conn.commit()
+
+            # send OTP
+            try:
+                msg = Message(subject='KrishiMitra Email Verification OTP', sender=current_app.config.get('MAIL_USERNAME'), recipients=[email])
+                msg.body = f"Your KrishiMitra verification code is: {otp}\nThis code will expire in 15 minutes."
+                mail.send(msg)
+            except Exception as e:
+                current_app.logger.exception("Failed to send verification OTP email")
+                conn.rollback()
+                return jsonify({"message": "Failed to send verification email"}), 500
+    except Exception as e:
+        conn.rollback()
+        current_app.logger.exception("Error in send_verify_otp")
+        return jsonify({"message": "Internal server error"}), 500
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    return jsonify({"message": "Verification code sent"}), 200
+
+
+@auth.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    email = data.get('email')
+    otp = data.get('otp')
+
+    if not all([email, otp]):
+        return jsonify({"message": "Email and OTP are required"}), 400
+
+    conn = get_connection()
+    if not conn:
+        return jsonify({"message": "Database connection failed"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT otp_hash, expires_at FROM EmailVerifications WHERE email = %s", (email,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({"message": "No verification request found"}), 404
+
+            otp_hash_stored = row['otp_hash'] if isinstance(row, dict) and 'otp_hash' in row else row[0]
+            expires_at = row['expires_at'] if isinstance(row, dict) and 'expires_at' in row else row[1]
+
+            import hashlib, datetime as _dt
+            if _dt.datetime.utcnow() > expires_at:
+                cursor.execute("DELETE FROM EmailVerifications WHERE email = %s", (email,))
+                conn.commit()
+                return jsonify({"message": "OTP expired"}), 400
+
+            if hashlib.sha256(otp.encode()).hexdigest() != otp_hash_stored:
+                return jsonify({"message": "Invalid OTP"}), 400
+
+            # mark user verified; add column if missing
+            try:
+                cursor.execute("ALTER TABLE Farmers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE")
+            except Exception:
+                # best effort; ignore
+                pass
+
+            cursor.execute("UPDATE Farmers SET email_verified = TRUE WHERE email = %s", (email,))
+            cursor.execute("DELETE FROM EmailVerifications WHERE email = %s", (email,))
+            conn.commit()
+    except Exception as e:
+        conn.rollback()
+        current_app.logger.exception("Error in verify_otp")
+        return jsonify({"message": "Internal server error"}), 500
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    return jsonify({"message": "Email verified"}), 200
+
+
+@auth.route('/me', methods=['GET'])
+@token_required
+def me():
+    farmer_id = g.get('farmer_id')
+    if not farmer_id:
+        return jsonify({"message": "Unauthorized"}), 401
+
+    conn = get_connection()
+    if not conn:
+        return jsonify({"message": "Database connection failed"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # check if email_verified exists
+            try:
+                cursor.execute(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farmers' AND column_name='email_verified') AS exists"
+                )
+                exists_row = cursor.fetchone()
+                if isinstance(exists_row, dict):
+                    has_email_verified = bool(exists_row.get('exists', False))
+                else:
+                    has_email_verified = bool(exists_row[0])
+            except Exception:
+                has_email_verified = False
+
+            if has_email_verified:
+                cursor.execute("SELECT farmer_id, name, city, email, email_verified FROM Farmers WHERE farmer_id = %s", (farmer_id,))
+            else:
+                cursor.execute("SELECT farmer_id, name, city, email FROM Farmers WHERE farmer_id = %s", (farmer_id,))
+            row = cursor.fetchone()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    if not row:
+        return jsonify({"message": "User not found"}), 404
+
+    user = {}
+    if isinstance(row, dict):
+        user = {
+            "id": row.get('farmer_id'),
+            "name": row.get('name'),
+            "city": row.get('city'),
+            "email": row.get('email'),
+            "email_verified": bool(row.get('email_verified', False))
+        }
+    else:
+        try:
+            user = {"id": row[0], "name": row[1], "city": row[2], "email": row[3], "email_verified": bool(row[4])}
+        except Exception:
+            user = {"id": row[0], "name": row[1], "city": row[2], "email": row[3], "email_verified": False}
+
+    return jsonify({"user": user}), 200
 
 
 # Forgot Password

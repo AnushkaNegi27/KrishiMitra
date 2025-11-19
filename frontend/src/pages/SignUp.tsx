@@ -31,8 +31,19 @@ export default function SignUp() {
       if (res.ok) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", name);
-        toast.success("Signup successful!");
-        navigate("/dashboard");
+        // after signup, trigger verification OTP and send user to verify page
+        try {
+          await fetch(`${API_BASE_URL}/auth/send-verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+        } catch (e) {
+          // ignore; user will be able to request OTP from verify page
+        }
+        localStorage.setItem("verifyEmail", email);
+        toast.success("Signup successful! Please verify your email.");
+        navigate("/verify-email");
       } else {
         toast.error(data.error || "Signup failed");
       }
