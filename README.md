@@ -225,19 +225,6 @@ Returns personalized stats and recent activity for the authenticated farmer.
     }
   ]
 }
-
----
-
-***
-
-## Frontend Setup and Configuration
-
-1. **Navigate to the Frontend Directory**
-
-   Change to the `frontend` directory in your project.
-
-   ```bash
-   cd ./frontend
    ```
 
 2. **Install Dependencies**
